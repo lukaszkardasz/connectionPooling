@@ -1,6 +1,7 @@
 package pl.n2god.servlet;
 
 import pl.n2god.data.City;
+import pl.n2god.db.DbUtil;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -42,23 +43,19 @@ public class SqlServlet extends HttpServlet {
 			}
 			request.setAttribute("cityList", cityList);
 			request.getRequestDispatcher("cityList.jsp").forward(request, response);
-		} catch (ClassNotFoundException | SQLException e) {
+		} catch (SQLException e) {
 			e.printStackTrace();
 			response.sendError(500); //nie udało się pobrać danych
 		}
 	}
 
-	private List<City> getCities() throws ClassNotFoundException, SQLException {
-		final String driver = "com.mysql.cj.jdbc.Driver";
-		Class.forName(driver);
-
+	private List<City> getCities() throws SQLException {
 		List<City> cityList = null;
-		final String dbPath = "jdbc:mysql://localhost:3306/world?serverTimezone=UTC";
 		final String sqlQuery = "SELECT Name, Population FROM city";
 
-		try (Connection connection = DriverManager.getConnection(dbPath, "user", "password");
+		try (Connection connection = DbUtil.getInstance().getConnection();
 		     Statement statement = connection.createStatement();
-		     ResultSet resultSet = statement.executeQuery(sqlQuery)) {
+		     ResultSet resultSet = statement.executeQuery(sqlQuery);) {
 			String cityName = null;
 			int cityPopulation = 0;
 			cityList = new ArrayList<>();
@@ -70,5 +67,10 @@ public class SqlServlet extends HttpServlet {
 			}
 			return cityList;
 		}
+	}
+
+	@Override
+	public void destroy() {
+		DbUtil.getInstance().close();
 	}
 }
